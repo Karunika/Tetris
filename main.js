@@ -11,7 +11,7 @@ const VACANT = "black"; // Default Colour
 
 // Freefall Speed
 const FREEFALL_SPEED = 1; // in seconds
-const SOFT_DROP_SPEED = 0.1;
+const SOFT_DROP_SPEED = 0.05;
 
 // Tetriminoes
 const T = [
@@ -61,6 +61,7 @@ const tetriminoes = [
     { matrix: O, color: "rgb(227, 159, 4)" }
 ];
 const MAX_TETRIMINO_HISTORY = 8;
+const NEXT_TETRIMINOES_COUNT = 4; // wtf should i name this (P.S. cant exceed 7)
 
 // Canvas Setup
 canvas.width = COLUMNS*SIZE;
@@ -82,13 +83,13 @@ for(i in [...Array(ROWS)])
     for(j in [...Array(COLUMNS)])
         drawBox(Number(j), Number(i), VACANT);
 
+
 // Tetrimino class
 class Tetrimino{
     constructor({matrix: tetrimino, color}){
         this.tetrimino = tetrimino;
         this.color = color;
         this.N = tetrimino.length;
-        this.vRot = true;
         // Position coordinates
         this.x = Math.floor((COLUMNS-1)/2)-1;
         this.y = -3;
@@ -101,51 +102,44 @@ class Tetrimino{
             for(j in [...Array(this.N)])
                 callback(this.tetrimino[i][j], parseInt(i), parseInt(j));
     }
-    // Rotations
+    // Rotations - change orientation (matrix)
     rotateRight(){
-        this.vRot = !this.vRot;
         let r = Array.from(this.tetrimino, t => [...t]);
         this.iter((_, i, j) => { r[i][j] = this.tetrimino[this.N - 1 - j][i]; });
+        if(this.detectCollision(0, 0, r))
+            return this;
         this.tetrimino = Array.from(r, t => [...t]);
         return this;
     }
     rotateLeft(){
-        this.vRot = !this.vRot;
         let r = Array.from(this.tetrimino, t => [...t]);
         this.iter((_, i, j) => { r[i][j] = this.tetrimino[j][this.N - 1 - i]; });
+        if(this.detectCollision(0, 0, r))
+            return this;
         this.tetrimino = Array.from(r, t => [...t]);
         return this;
     }
     rotate180(){
-        if(this.vRot){
-            let r = Array.from(this.tetrimino, t => [...t]);
-            this.iter((_, i, j) => { r[i][j] = this.tetrimino[this.N - 1 - i][j]; });
-            this.tetrimino = Array.from(r, t => [...t]);
-        }
-        else
-        this.tetrimino.map(row => row.reverse());
+        return this.rotateRight().rotateRight();
+    }
+    // Movements - change coridinates in the grid (x, y)
+    moveRight(){
+        if(this.detectCollision(1, 0))
+            return this;
+        this.x++;
         return this;
     }
-    // Movements
-    moveRight(){
-        if(this.x == COLUMNS - this.N) return false;
-        this.erase;
-        this.x++;
-        this.render;
-        return true;
-    }
     moveLeft(){
-        if(this.x == 0) return false;
-        this.erase;
+        if(this.detectCollision(-1, 0))
+            return this;
         this.x--;
-        this.render();
-        return true;
+        return this;
     }
     moveDown(){
-        if(this.y == ROWS - this.N) return false;
-        this.erase().y++;
-        this.render();
-        return true;
+        if(this.detectCollision(0, 1))
+            return this;
+        this.x--;
+        return this;
     }
     fall(){
         let start, currTime, lastTime = 0;
@@ -156,7 +150,11 @@ class Tetrimino{
             currTime = (now - start)/1000;
             if(currTime > lastTime){
                 lastTime += this.softDropMode ? SOFT_DROP_SPEED : FREEFALL_SPEED;
-                if(!this.moveDown()){
+                if(!this.detectCollision(0, 1)){
+                    this.erase().y++;
+                    this.render();
+                }else{
+                    console.log("downward movement not possible");
                     this.placed = true;
                     GameGrid.updateGridMatrix(this.x, this.y, this.N, this.tetrimino);
                     GameState.nextTetriminoFall();
@@ -167,14 +165,14 @@ class Tetrimino{
         };
         window.requestAnimationFrame(drop);
     };
+    haltTheFall(){
+        return this;
+    };
     // setter
     setSoftDropMode(bool){
         this.softDropMode = bool;
         return this.softDropMode;
     };
-    collisionDetection(){
-        GameGrid.matrix
-    }
     // Erase and Render
     erase(){
         this.iter((t, i, j) => { if(t) drawBox(this.x+j, this.y+i, VACANT); });
@@ -184,67 +182,111 @@ class Tetrimino{
         this.iter((t, i, j) => { if(t) drawBox(this.x+j, this.y+i, this.color); });
         return this;
     };
-    // Public interface
-    renderRotateRight(){
-        this.erase().rotateRight().render();
-    }
-    renderRotateLeft(){
-        this.erase().rotateLeft().render();
-    }
-    renderRotate180(){
-        this.erase().rotate180().render();
-    }
 }
-
-// Game state
-let tetriminoHistory = [];
-const GameState = {
-    activeTetrimino: undefined,
-    activeTetriminoIndex: undefined,
-    generateRandomTetrimino: function() {
-        let rand = Math.floor(Math.random()*tetriminoes.length);
-        // In order to avoid repeating a tetrimino
-        while(this.activeTetriminoIndex == rand)
-            rand = Math.floor(Math.random()*tetriminoes.length);
-
-        // bruh wtf
-        this.activeTetrimino = new Tetrimino(tetriminoes[rand]);
-        return this;
-    },
-    dropActiveTetrimino: function() {
-        this.activeTetrimino.fall();
-        return this;
-    },
-    pushTetriminoHistory: function() {
-        if(tetriminoHistory.length > MAX_TETRIMINO_HISTORY)
-            tetriminoHistory.unshift();
-        tetriminoHistory.push(this.activeTetriminoIndex);
-        return this;
-    },
-    nextTetriminoFall: function() {
-        this.generateRandomTetrimino()
-            .dropActiveTetrimino()
-            .pushTetriminoHistory();
-    }
-}
-GameState.nextTetriminoFall();
 
 const GameGrid = {
     matrix: [],
     initMatrix: function() {
         for(i in [...Array(ROWS)]) this.matrix.push("0".repeat(COLUMNS).split("").map(n => +n));
-        console.log(this.matrix)
+        // console.log(this.matrix)
     },
     updateGridMatrix: function(x, y, N, t) {
         for(let i = y; i < y+N; i++)
             for(let j = x; j < x+N; j++)
                 if(t[Math.abs(i-y)][Math.abs(j-x)]) this.matrix[i][j] = 1;
-        console.log(this.matrix);
+        // console.log(this.matrix);
     }
 }
 GameGrid.initMatrix();
 
+// Game state
+const GameState = {
+    activeTetrimino: undefined,
+    activeTetriminoIndex: undefined,
+    nextTetriminoIndexes: [],
+    tetriminoHistory: [],
+    tetriminoOnHold: undefined,
+    generateRandomTetriminoIndex: function() {
+        let rand = Math.floor(Math.random()*tetriminoes.length);
+        // In order to avoid repeating a tetrimino in the nextTerminoes list
+        while(this.nextTetriminoIndexes.includes(rand))
+            rand = Math.floor(Math.random()*tetriminoes.length);
+        return rand;
+    },
+    updateNextTetriminoIndexes: function(rand) {
+        this.activeTetriminoIndex = this.nextTetriminoIndexes.shift();
+        this.nextTetriminoIndexes.push(rand);
+        return this;
+    },
+    setActiveTetrimino: function() {
+        this.activeTetrimino = new Tetrimino(tetriminoes[this.activeTetriminoIndex]);
+        return this;
+    },
+    // generate an array of `NEXT_TETRIMINOES_COUNT` random numbers
+    dropActiveTetrimino: function() {
+        this.activeTetrimino.fall();
+        return this;
+    },
+    generateFirstLot: function() {
+        let rand;
+        for(let i = 0; i < NEXT_TETRIMINOES_COUNT; i++){
+            rand = Math.floor(Math.random()*tetriminoes.length);
 
+            while(this.nextTetriminoIndexes.includes(rand))
+                rand = Math.floor(Math.random()*tetriminoes.length);
+    
+            this.nextTetriminoIndexes.push(rand);
+        }
+        return this;
+    },
+    // pushTetriminoHistory: function() {
+    //     if(this.tetriminoHistory.length >= MAX_TETRIMINO_HISTORY)
+    //         this.tetriminoHistory.shift();
+    //     this.tetriminoHistory.push(this.activeTetriminoIndex);
+    //     return this;
+    // },
+    beginGame: function() {
+        this.generateFirstLot()
+            .nextTetriminoFall();
+    },
+    nextTetriminoFall: function() {
+        // console.log(this.nextTetriminoIndexes);
+        this.updateNextTetriminoIndexes(this.generateRandomTetriminoIndex())
+            .setActiveTetrimino()
+            .dropActiveTetrimino();
+        return this;
+    },
+    holdTetrimino: function() {
+        this.tetriminoOnHold = this.activeTetrimino;
+        this.nextTetriminoFall;
+    }
+}
+GameState.beginGame();
+
+
+Tetrimino.prototype.detectCollision = function(dx, dy, dt = this.tetrimino) {
+    // console.log(GameGrid.matrix);
+    // new cordinates
+    let x = this.x + dx;
+    let y = this.y + dy;
+    // dt - new orientation
+    for(let i = y; i < y+this.N; i++)
+        for(let j = x+dx; j < x+this.N; j++){
+            if(dt[i-y][j-x]){
+                if(i >= ROWS)
+                    return true;
+                if(j >= COLUMNS || j <= -1)
+                    return true;
+                if(i >= 0)
+                    if(GameGrid.matrix[i][j] == 1)
+                        return true;
+            }
+
+        }
+    return false;
+}
+
+// Enumerations
 const GameControls = {
     LEFT: 37,
     UP: 38,
@@ -258,37 +300,68 @@ const GameControls = {
 
 // Event Listeners
 document.addEventListener('keydown', e => {
-    const {LEFT, UP, RIGHT, DOWN, SPACE, Z, A, C} = GameControls;
+    e.preventDefault();
+    const { LEFT, UP, RIGHT, DOWN, SPACE, Z, A, C } = GameControls;
     let { activeTetrimino } = GameState;
     switch(e.keyCode){
         case LEFT:
-            activeTetrimino.moveLeft();
+            activeTetrimino.erase().moveLeft().render();
             break;
         case UP:
-            activeTetrimino.renderRotateRight();
+            activeTetrimino.erase().rotateRight().render();
             break;
         case RIGHT:
-            activeTetrimino.moveRight();
+            activeTetrimino.erase().moveRight().render();
             break;
         case DOWN:
             activeTetrimino.setSoftDropMode(true);
             break;
-        // case SPACE:
-        //     activeTetrimino.fall();
-        //     break;
+        case SPACE:
+            activeTetrimino.fall();
+            break;
         case Z:
-            activeTetrimino.renderRotateRight();
+            activeTetrimino.erase().rotateRight().render();
             break;
         case A:
-            activeTetrimino.renderRotate180();
+            activeTetrimino.erase().rotate180().render();
             break;
-        // case C:
-        //     break;
-        //     activeTetrimino.holdPiece();
+        case C:
+            GameState.holdTetrimino();
+            break;
     }
 });
 document.addEventListener('keyup', e => {
+    const { LEFT, UP, RIGHT, DOWN, SPACE, Z, A, C } = GameControls;
+    let { activeTetrimino } = GameState;
+    switch(e.keyCode){
+        case LEFT:
+            // activeTetrimino.erase().moveLeft().render();
+            break;
+        case UP:
+            // activeTetrimino.erase().rotateRight().render();
+            break;
+        case RIGHT:
+            // activeTetrimino.erase().moveRight().render();
+            break;
+        case DOWN:
+            activeTetrimino.setSoftDropMode(false);
+            break;
+        case SPACE:
+            // activeTetrimino.fall();
+            break;
+        case Z:
+            // activeTetrimino.erase().rotateRight().render();
+            break;
+        case A:
+            // activeTetrimino.erase().rotate180().render();
+            break;
+        case C:
+            // GameState.holdTetrimino();
+            break;
+    }
+});
+document.addEventListener('keypress', e => {
     let { activeTetrimino } = GameState;
     if(e.keyCode = GameControls.DOWN)
-        activeTetrimino.setSoftDropMode(false);
+        activeTetrimino.moveDown();
 });
