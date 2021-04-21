@@ -9,9 +9,9 @@ const ROWS = 20;
 const SIZE = 32;
 const VACANT = "black"; // Default Colour
 
-// Freefall Speed
-const FREEFALL_SPEED = 1; // in seconds
-const SOFT_DROP_SPEED = 0.05;
+// Freefall Speed (in seconds)
+const FREEFALL_SPEED = 1;
+const SOFT_DROP_SPEED = 0.01;
 
 // Tetriminoes
 const T = [
@@ -20,35 +20,35 @@ const T = [
     [0,0,0]
 ];
 const S = [
-    [0,1,1],
-    [1,1,0],
+    [0,2,2],
+    [2,2,0],
     [0,0,0]
 ];
 const Z = [
-    [1,1,0],
-    [0,1,1],
+    [3,3,0],
+    [0,3,3],
     [0,0,0]
 ];
 const L = [
-    [0,0,1],
-    [1,1,1],
+    [0,0,4],
+    [4,4,4],
     [0,0,0]
 ];
 const J = [
-    [1,0,0],
-    [1,1,1],
+    [5,0,0],
+    [5,5,5],
     [0,0,0]
 ];
 const I = [
-    [0,1,0,0],
-    [0,1,0,0],
-    [0,1,0,0],
-    [0,1,0,0]
+    [0,6,0,0],
+    [0,6,0,0],
+    [0,6,0,0],
+    [0,6,0,0]
 ];
 const O = [
     [0,0,0,0],
-    [0,1,1,0],
-    [0,1,1,0],
+    [0,7,7,0],
+    [0,7,7,0],
     [0,0,0,0]
 ];
 const tetriminoes = [
@@ -141,6 +141,7 @@ class Tetrimino{
         this.x--;
         return this;
     }
+    // Fall animation
     fall(){
         let start, currTime, lastTime = 0;
         const drop = now => {
@@ -154,9 +155,10 @@ class Tetrimino{
                     this.erase().y++;
                     this.render();
                 }else{
-                    console.log("downward movement not possible");
                     this.placed = true;
                     GameGrid.updateGridMatrix(this.x, this.y, this.N, this.tetrimino);
+                    if(GameGrid.completeRow())
+                        GameGrid.render();
                     GameState.nextTetriminoFall();
                     return;
                 }
@@ -165,14 +167,15 @@ class Tetrimino{
         };
         window.requestAnimationFrame(drop);
     };
-    haltTheFall(){
-        return this;
-    };
-    // setter
+    // getter and setter
     setSoftDropMode(bool){
         this.softDropMode = bool;
         return this.softDropMode;
     };
+    setPlaced(bool){
+        this.placed = bool;
+        return this.placed;
+    }
     // Erase and Render
     erase(){
         this.iter((t, i, j) => { if(t) drawBox(this.x+j, this.y+i, VACANT); });
@@ -188,13 +191,32 @@ const GameGrid = {
     matrix: [],
     initMatrix: function() {
         for(i in [...Array(ROWS)]) this.matrix.push("0".repeat(COLUMNS).split("").map(n => +n));
-        // console.log(this.matrix)
     },
     updateGridMatrix: function(x, y, N, t) {
         for(let i = y; i < y+N; i++)
             for(let j = x; j < x+N; j++)
-                if(t[Math.abs(i-y)][Math.abs(j-x)]) this.matrix[i][j] = 1;
-        // console.log(this.matrix);
+                if(t[Math.abs(i-y)][Math.abs(j-x)]) this.matrix[i][j] = t[Math.abs(i-y)][Math.abs(j-x)];
+    },
+    completeRow: function() {
+        let atleastOneFullRow = false
+        for(let i = 0; i < ROWS; i++){
+            if(this.matrix[i].every(c => c != 0)){
+                atleastOneFullRow = true;
+                this.matrix.splice(i, 1);
+                this.matrix.unshift("0".repeat(COLUMNS).split("").map(n => +n));
+            }
+        }
+        return atleastOneFullRow;
+    },
+    render: function(){
+        for(let i = 0; i < ROWS; i++){
+            for(let j = 0; j < COLUMNS; j++){
+                if(!this.matrix[i][j])
+                    drawBox(j, i, VACANT);
+                else
+                    drawBox(j, i, tetriminoes[this.matrix[i][j]-1]['color']);
+            }
+        }
     }
 }
 GameGrid.initMatrix();
@@ -204,7 +226,6 @@ const GameState = {
     activeTetrimino: undefined,
     activeTetriminoIndex: undefined,
     nextTetriminoIndexes: [],
-    tetriminoHistory: [],
     tetriminoOnHold: undefined,
     generateRandomTetriminoIndex: function() {
         let rand = Math.floor(Math.random()*tetriminoes.length);
@@ -239,18 +260,11 @@ const GameState = {
         }
         return this;
     },
-    // pushTetriminoHistory: function() {
-    //     if(this.tetriminoHistory.length >= MAX_TETRIMINO_HISTORY)
-    //         this.tetriminoHistory.shift();
-    //     this.tetriminoHistory.push(this.activeTetriminoIndex);
-    //     return this;
-    // },
     beginGame: function() {
         this.generateFirstLot()
             .nextTetriminoFall();
     },
     nextTetriminoFall: function() {
-        // console.log(this.nextTetriminoIndexes);
         this.updateNextTetriminoIndexes(this.generateRandomTetriminoIndex())
             .setActiveTetrimino()
             .dropActiveTetrimino();
@@ -265,7 +279,6 @@ GameState.beginGame();
 
 
 Tetrimino.prototype.detectCollision = function(dx, dy, dt = this.tetrimino) {
-    // console.log(GameGrid.matrix);
     // new cordinates
     let x = this.x + dx;
     let y = this.y + dy;
@@ -278,7 +291,7 @@ Tetrimino.prototype.detectCollision = function(dx, dy, dt = this.tetrimino) {
                 if(j >= COLUMNS || j <= -1)
                     return true;
                 if(i >= 0)
-                    if(GameGrid.matrix[i][j] == 1)
+                    if(GameGrid.matrix[i][j])
                         return true;
             }
 
@@ -361,7 +374,8 @@ document.addEventListener('keyup', e => {
     }
 });
 document.addEventListener('keypress', e => {
+    e.preventDefault();
     let { activeTetrimino } = GameState;
-    if(e.keyCode = GameControls.DOWN)
-        activeTetrimino.moveDown();
-});
+    if(e.keyCode == GameControls.DOWN)
+        activeTetrimino.erase().moveDown(),render();
+})
