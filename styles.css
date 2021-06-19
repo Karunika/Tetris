@@ -1,0 +1,89 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora&display=swap');
+*{
+    margin: 0;
+    padding: 0;
+    outline: none;
+    box-sizing: border-box;
+    font-family: 'Lora', serif;
+}
+:root {
+    --background-color: rgb(187, 187, 187);
+    --secondary-vacant: rgb(126, 126, 126);
+    --hover-color: rgb(10, 116, 116);
+}
+body{
+    background-color: var(--background-color);
+    /* background-color: rgb(29, 29, 29); */
+    display: flex;
+    height: 100vh;
+    align-items: center;
+    justify-content: center;
+}
+.tetris-game-instance-wrapper{
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+}
+.tetris-game-instance-wrapper canvas{
+    border: solid 1px black;
+}
+.tetris-game-instance-wrapper .next{
+    margin-left: 2rem;
+}
+.tetris-game-instance-wrapper .left{
+    margin-right: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+}
+.tetris-game-instance-wrapper .left .hold{
+    margin-bottom: 1rem;
+}
+.tetris-game-instance-wrapper .left .stats{
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid black;
+    font-size: 1.2rem;
+    padding: 0.4rem;
+    line-height: 1.8rem;
+}
+.tetris-game-instance-wrapper .left .start{
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid black;
+    font-size: 1.2rem;
+    padding: 0.2rem;
+    cursor: pointer;
+    transition: 0.4s ease;
+}
+.tetris-game-instance-wrapper .left .start:hover{
+    color: var(--hover-color);
+}
+.tetris-game-instance-wrapper .left .github{
+    margin-top: 1rem;
+    font-size: 1.2rem;
+    padding: 0.2rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: rows;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: black;
+    transition: 0.4s ease;
+}
+.tetris-game-instance-wrapper .left .github *{
+    margin: 0.4rem;
+}
+.tetris-game-instance-wrapper .left .github:hover{
+    color: var(--hover-color);
+}
+.tetris-game-instance-wrapper .left .github img{
+    height: 1rem;
+    transition: 0.4s ease;
+}
+.tetris-game-instance-wrapper .left .github:hover img{
+    filter: brightness(500%);
+}
