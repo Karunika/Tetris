@@ -1,13 +1,19 @@
 # Tetris
 
 ## Project Setup
-```npm install```
+```bat
+npm install
+```
 
 ## Bundle & Compile Typescript
-```npm run build```
+```bat
+npm run build
+```
 
 ## Spin up a Local Development Server
-```webpack serve```
+```bat
+webpack serve
+```
 
 ## About
 A Typescript implementation of the Classical Game of Tetris.
