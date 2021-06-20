@@ -26,8 +26,8 @@ export default class Game {
     tetriminoOnHoldUnit: undefined | Unit = undefined;
     gridMatrix: Unit[][] = [];
     timer!: NodeJS.Timer;
-    running: boolean = false;
     holdingDisabled: boolean = false;
+    running: boolean = false;
 
     // static readonly MAX_TETRIMINO_HISTORY: number = 8;
     static readonly NEXT_TETRIMINOES_COUNT: number = 4;
@@ -94,7 +94,6 @@ export default class Game {
             t.x = 1;
             t.y = 1;
             t.render(`hold`);
-
         }
     };
     renderNextCanvas() : void{
@@ -144,31 +143,32 @@ export default class Game {
             ${String(mm).padStart(2,'0')}:${String(ss%60).padStart(2, '0')}.${String(ms%100).padStart(2, '0')}`
         }, 40)
     };
-    startGame() : void{
-        this.running = true;
-        this.initGridMatrix();
-        this.render();
-        this.fillNextTetriminoUnits();
-        this.setActiveTetrimino();
-        this.renderNextCanvas();
-        this.renderHoldCanvas();
-        this.initTimer();
-        this.activeTetrimino.varticalFall();
-    };
-    gameOver() : void{
-        this.running = false;
-        clearInterval(this.timer);
-        alert(`Game over!`);
-        // reset
-        this.gridMatrix = [];
-        this.nextTetriminoUnits = [];
-    };
     setActiveTetrimino() : void{
         const t: Unit = this.nextTetriminoUnits.shift()!;
         this.activeTetriminoUnit = t;
         const { matrix, color } = data.tetriminoes[t-1];
         this.activeTetrimino = new Tetrimino(matrix, color, this);
         this.fillNextTetriminoUnits();
+    };
+    holdTetrimino() : void{
+        if(this.holdingDisabled == false){
+            if(this.tetriminoOnHoldUnit){
+                this.activeTetrimino.erase().haltVerticalFalling();
+                let temp = this.activeTetriminoUnit;
+                this.activeTetriminoUnit = this.tetriminoOnHoldUnit;
+                this.tetriminoOnHoldUnit = temp;
+                let { matrix, color } = data.tetriminoes[this.activeTetriminoUnit-1];
+                this.activeTetrimino = new Tetrimino(matrix, color, this);
+                this.activeTetrimino.varticalFall();
+            }else{
+                this.activeTetrimino.erase().haltVerticalFalling();
+                this.tetriminoOnHoldUnit = this.activeTetriminoUnit;
+                this.next();
+            }
+            this.holdingDisabled = true;
+            this.renderHoldCanvas();
+        }
+
     };
     updateGridMatrix(t: Tetrimino) : Game{
         for(let i = 0; i < t.N; i++){
@@ -191,34 +191,24 @@ export default class Game {
         }
         return atleastOneFullRow;
     };
-    holdTetrimino() : void{
-        console.log(this.holdingDisabled)
-        if(this.holdingDisabled == false){
-            if(this.tetriminoOnHoldUnit){
-                this.activeTetrimino.erase().haltVerticalFalling();
-                let temp = this.activeTetriminoUnit;
-                this.activeTetriminoUnit = this.tetriminoOnHoldUnit;
-                this.tetriminoOnHoldUnit = temp;
-                let { matrix, color } = data.tetriminoes[this.activeTetriminoUnit-1];
-                this.activeTetrimino = new Tetrimino(matrix, color, this);
-                this.activeTetrimino.varticalFall();
-            }else{
-                this.activeTetrimino.erase().haltVerticalFalling();
-                this.tetriminoOnHoldUnit = this.activeTetriminoUnit;
-                this.next();
-            }
-            this.holdingDisabled = true;
-            this.renderHoldCanvas();
-        }
-
+    startGame() : void{
+        this.running = true;
+        this.initGridMatrix();
+        this.render();
+        this.fillNextTetriminoUnits();
+        this.setActiveTetrimino();
+        this.renderNextCanvas();
+        this.renderHoldCanvas();
+        this.initTimer();
+        this.activeTetrimino.varticalFall();
     };
     next() : void{
         this.holdingDisabled = false;
         this.setActiveTetrimino();
         this.renderNextCanvas();
         this.activeTetrimino.varticalFall();
-    }
-    render(): void{
+    };
+    render() : void{
         for(let i = 0; i < this.rows; i++){
             for(let j = 0; j < this.columns; j++){
                 if(!this.gridMatrix[i][j]){
@@ -228,5 +218,14 @@ export default class Game {
                 }
             }
         }
+    };
+    gameOver() : void{
+        this.running = false;
+        clearInterval(this.timer);
+        alert(`Game over!`);
+        // reset
+        this.gridMatrix = [];
+        this.nextTetriminoUnits = [];
+        this.tetriminoOnHoldUnit = undefined;
     };
 }
