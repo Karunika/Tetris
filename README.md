@@ -33,3 +33,6 @@ A Typescript implementation of the Classical Game of Tetris.
 |Rotate 180:    |`a`      |
 |Hold:          |`c`      |
 
+
+## Contribute
+Feel free to open issues & make pull requests, I'll try my best to work on them.
