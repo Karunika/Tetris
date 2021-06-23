@@ -37,13 +37,13 @@ const O = [
     [0,0,0,0]
 ];
 const tetriminoes = [
-    { matrix: T, color: "rgb(176, 41, 138)" },
-    { matrix: S, color: "rgb(89, 177, 2)" },
-    { matrix: Z, color: "rgb(215, 15, 55)" },
-    { matrix: L, color: "rgb(227, 91, 5)" },
-    { matrix: J, color: "rgb(17, 32, 99)" },
-    { matrix: I, color: "rgb(14, 155, 215)" },
-    { matrix: O, color: "rgb(227, 159, 4)" }
+    { matrix: T, color: "purple" },
+    { matrix: S, color: "green" },
+    { matrix: Z, color: "red" },
+    { matrix: L, color: "orange" },
+    { matrix: J, color: "blue" },
+    { matrix: I, color: "cyan" },
+    { matrix: O, color: "yellow" }
 ];
 export const data = {
     T,S,Z,L,J,I,O,

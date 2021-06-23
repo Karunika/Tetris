@@ -2,5 +2,7 @@ node_modules/
 package-lock.json
 TODO.md
 public/bundle.js
+public/*.png
+!public/github.png
 .DS_Store
 docs/

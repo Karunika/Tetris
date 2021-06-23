@@ -8,6 +8,17 @@ module.exports = {
                 test: /\.ts$/, 
                 use: `ts-loader`,
                 include: [path.resolve(__dirname, `src`)]
+            },
+            {
+                test: /\.png$/, 
+                use: [
+                    {
+                        loader: 'file-loader',
+                        options: {
+                            esModule: false,
+                        },
+                    },
+                ],
             }
         ]
     },

@@ -29,10 +29,8 @@ export default class Game {
     holdingDisabled: boolean = false;
     running: boolean = false;
 
-    // static readonly MAX_TETRIMINO_HISTORY: number = 8;
     static readonly NEXT_TETRIMINOES_COUNT: number = 4;
     static readonly VACANT: string = `black`;
-    static readonly SECONDARY_VACANT: string = `rgb(126, 126, 126)`;
 
     constructor(UI: {mainCanvas: HTMLCanvasElement, holdCanvas: HTMLCanvasElement, nextCanvas: HTMLCanvasElement, statsBoard: HTMLDivElement}, columns: number, rows: number, size: number){
         this.mainCanvas = UI.mainCanvas;
@@ -85,7 +83,7 @@ export default class Game {
     renderHoldCanvas() : void{
         for(let i = 0; i < 6; i++){
             for(let j = 0; j < 6; j++){
-                drawBox(this.holdCtx, j, i, this.size, Game.SECONDARY_VACANT);
+                drawBox(this.holdCtx, j, i, this.size, Game.VACANT);
             }
         }
         if(this.tetriminoOnHoldUnit != undefined){
@@ -102,7 +100,7 @@ export default class Game {
         }
         for(let i = 0; i < 15; i++){
             for(let j = 0; j < 6; j++){
-                drawBox(this.nextCtx, j, i, this.size, Game.SECONDARY_VACANT);
+                drawBox(this.nextCtx, j, i, this.size, Game.VACANT);
             }
         }
         let t;
@@ -152,14 +150,15 @@ export default class Game {
     };
     holdTetrimino() : void{
         if(this.holdingDisabled == false){
-            if(this.tetriminoOnHoldUnit){
+            if(this.tetriminoOnHoldUnit != undefined){
                 this.activeTetrimino.erase().haltVerticalFalling();
+                this.activeTetrimino.clearLockdownTimer();
                 let temp = this.activeTetriminoUnit;
                 this.activeTetriminoUnit = this.tetriminoOnHoldUnit;
                 this.tetriminoOnHoldUnit = temp;
                 let { matrix, color } = data.tetriminoes[this.activeTetriminoUnit-1];
                 this.activeTetrimino = new Tetrimino(matrix, color, this);
-                this.activeTetrimino.varticalFall();
+                this.activeTetrimino.verticalFall();
             }else{
                 this.activeTetrimino.erase().haltVerticalFalling();
                 this.tetriminoOnHoldUnit = this.activeTetriminoUnit;
@@ -200,13 +199,13 @@ export default class Game {
         this.renderNextCanvas();
         this.renderHoldCanvas();
         this.initTimer();
-        this.activeTetrimino.varticalFall();
+        this.activeTetrimino.verticalFall();
     };
     next() : void{
         this.holdingDisabled = false;
         this.setActiveTetrimino();
         this.renderNextCanvas();
-        this.activeTetrimino.varticalFall();
+        this.activeTetrimino.verticalFall();
     };
     render() : void{
         for(let i = 0; i < this.rows; i++){

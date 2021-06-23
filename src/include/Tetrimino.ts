@@ -2,6 +2,13 @@ import { Unit } from '../Tetriminoes';
 import drawBox from "./drawBox";
 import Game from "./Game";
 
+enum Collision{
+    NIL,
+    WALL_COLLISION,
+    FLOOR_COLLISION,
+    PIECE_COLLISION
+}
+
 class Tetrimino{
     matrix: Unit[][];
     color: string;
@@ -12,6 +19,11 @@ class Tetrimino{
 
     fall: undefined | number;
     softDropMode: boolean = false;
+    lockdownTimer: undefined | number;
+    lockdownMoves: number = 0;
+
+
+    static readonly MAX_LOCKDOWN_MOVES: number = 20;
     static readonly SOFT_DROP_SPEED: number = 0.01;
     static readonly FREEFALL_SPEED: number = 0.5;
 
@@ -37,15 +49,8 @@ class Tetrimino{
                 r[i][j] = this.matrix[this.N - 1 - j][i];
             }
         }
-        for(let i = 0; i < 3 && this.detectCollision(0, 0, r); i++){
-            if(this.x > (this.parentGame.columns/2)){
-                this.moveLeft();
-            }else if(this.x < (this.parentGame.columns/2)){
-                this.moveRight();
-            }
-            if(this.y + this.N >= this.parentGame.rows){
-                this.moveUp();
-            }
+        if(this.detectCollision(0,0,r)){
+            return this;
         }
         this.matrix = Array.from(r, t => [...t]);
         return this;
@@ -57,15 +62,8 @@ class Tetrimino{
                 r[i][j] = this.matrix[j][this.N - 1 - i];
             }
         }
-        for(let i = 0; i < 3 && this.detectCollision(0, 0, r); i++){
-            if(this.x > (this.parentGame.columns/2)){
-                this.moveLeft();
-            }else if(this.x < (this.parentGame.columns/2)){
-                this.moveRight();
-            }
-            if(this.y + this.N >= this.parentGame.rows){
-                this.moveUp();
-            }
+        if(this.detectCollision(0,0,r)){
+            return this;
         }
         this.matrix = Array.from(r, t => [...t]);
         return this;
@@ -134,6 +132,9 @@ class Tetrimino{
         }
     };
     hardDrop() : void{
+        if(this.lockdownTimer){
+            return;
+        }
         if(this.fall){
             window.cancelAnimationFrame(this.fall);
             this.fall = undefined;
@@ -147,7 +148,9 @@ class Tetrimino{
         this.y += i-1;
         this.lockTetrimino();
     };
-    varticalFall() : void{
+    verticalFall() : void{
+        this.clearLockdownTimer();
+        this.haltVerticalFalling();
         let start: number, currTime, lastTime = 0;
         const drop: FrameRequestCallback = (now: number) => {
             if(!start){ start = now; }
@@ -158,7 +161,10 @@ class Tetrimino{
                     this.erase().y++;
                     this.render();
                 }else{
-                    this.lockTetrimino();
+                    this.lockdownTimer = window.setTimeout(() => {
+                        this.lockTetrimino();
+                    }, 1000)
+                    this.lockdownMoves++;
                     return;
                 }
             }
@@ -166,13 +172,41 @@ class Tetrimino{
         };
         this.fall = window.requestAnimationFrame(drop);
     };
-    haltVerticalFalling(){
+    resetLockdownTimer() : void{
+        if(this.lockdownTimer == undefined){
+            return;
+        }
+        clearTimeout(this.lockdownTimer);
+        if(!this.detectCollision(0, 1)){
+            this.erase().y++;
+            this.render();
+            this.verticalFall();
+            this.lockdownTimer == undefined;
+            return;
+        }
+        if(this.lockdownMoves >= Tetrimino.MAX_LOCKDOWN_MOVES){
+            this.lockTetrimino();
+            this.lockdownMoves = 0;
+            return;
+        }
+        this.lockdownMoves++;
+        this.lockdownTimer = window.setTimeout(() => {
+            this.lockTetrimino();
+        }, 1000)
+    };
+    clearLockdownTimer() : void{
+        if(this.clearLockdownTimer != undefined){
+            window.clearTimeout(this.lockdownTimer);
+        }
+    };
+    haltVerticalFalling() : void{
         if(this.fall){
             window.cancelAnimationFrame(this.fall);
             this.fall = undefined;
         }
     };
-    detectCollision(dx: number, dy: number, dt: Unit[][] = this.matrix) : boolean{
+    detectCollision(dx: number, dy: number, dt: Unit[][] = this.matrix) : Collision{
+        let {NIL, FLOOR_COLLISION, WALL_COLLISION, PIECE_COLLISION} = Collision;
         // new cordinates
         let x = this.x + dx;
         let y = this.y + dy;
@@ -181,20 +215,20 @@ class Tetrimino{
             for(let j = x; j < x+this.N; j++){
                 if(dt[i-y][j-x] != Unit.V){
                     if(i >= this.parentGame.rows){
-                        return true;
+                        return FLOOR_COLLISION;
                     }
                     if(j >= this.parentGame.columns || j <= -1){
-                        return true;
+                        return WALL_COLLISION;
                     }
                     if(i >= 0){
                         if(this.parentGame.gridMatrix[i][j] != Unit.V){
-                            return true;
+                            return PIECE_COLLISION;
                         }
                     }
                 }
     
             }
-        return false;
+        return NIL;
     };
     erase(ctxS: string = `main`) : Tetrimino{
         let ctx = this.ctx(ctxS);

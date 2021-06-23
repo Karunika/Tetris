@@ -37,12 +37,15 @@ document.addEventListener('keydown', e => {
     switch(e.keyCode){
         case LEFT:
             game.activeTetrimino.erase().moveLeft().render();
+            game.activeTetrimino.resetLockdownTimer();
             break;
         case UP:
             game.activeTetrimino.erase().rotateRight().render();
+            game.activeTetrimino.resetLockdownTimer();
             break;
         case RIGHT:
             game.activeTetrimino.erase().moveRight().render();
+            game.activeTetrimino.resetLockdownTimer();
             break;
         case DOWN:
             game.activeTetrimino.setSoftDropMode(true);
@@ -52,9 +55,11 @@ document.addEventListener('keydown', e => {
             break;
         case Z:
             game.activeTetrimino.erase().rotateLeft().render();
+            game.activeTetrimino.resetLockdownTimer();
             break;
         case A:
             game.activeTetrimino.erase().rotate180().render();
+            game.activeTetrimino.resetLockdownTimer();
             break;
         case C:
             game.holdTetrimino();
