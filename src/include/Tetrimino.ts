@@ -42,21 +42,28 @@ class Tetrimino{
                 r[i][j] = this.matrix[this.N - 1 - j][i];
             }
         }
-        for(let i = 0; i <= 2; i++){
-            for(let j = 0; j <= 2; j++){
-                console.log(i,j)
+        for(let i = 0; i <= 2;){
+            for(let j = 0; j <= 2;){
+                console.log(i, j);
                 if(!this.detectCollision(i, j ,r)){
                     this.x += i;
                     this.y += j;
                     this.matrix = Array.from(r, t => [...t]);
                     return this;
                 }
-                if(!this.detectCollision(-i, -j ,r)){
-                    this.x -= i;
-                    this.y -= j;
+                i == j ? (j++) : (i++)
+            }
+        }
+        for(let i = 0; i >= -2;){
+            for(let j = 0; j >= -2;){
+                console.log(i, j);
+                if(!this.detectCollision(i, j ,r)){
+                    this.x += i;
+                    this.y += j;
                     this.matrix = Array.from(r, t => [...t]);
                     return this;
                 }
+                i == j ? (i--) : (j--)
             }
         }
         return this;
@@ -68,21 +75,28 @@ class Tetrimino{
                 r[i][j] = this.matrix[j][this.N - 1 - i];
             }
         }
-        for(let i = 0; i <= 2; i++){
-            for(let j = 0; j <= 2; j++){
-                console.log(i,j)
+        for(let i = 0; i <= 2;){
+            for(let j = 0; j <= 2;){
+                console.log(i, j);
                 if(!this.detectCollision(i, j ,r)){
                     this.x += i;
                     this.y += j;
                     this.matrix = Array.from(r, t => [...t]);
                     return this;
                 }
-                if(!this.detectCollision(-i, -j ,r)){
-                    this.x -= i;
-                    this.y -= j;
+                i == j ? (j++) : (i++)
+            }
+        }
+        for(let i = 0; i >= -2;){
+            for(let j = 0; j >= -2;){
+                console.log(i, j);
+                if(!this.detectCollision(i, j ,r)){
+                    this.x += i;
+                    this.y += j;
                     this.matrix = Array.from(r, t => [...t]);
                     return this;
                 }
+                i == j ? (i--) : (j--)
             }
         }
         return this;
