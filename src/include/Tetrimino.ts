@@ -44,7 +44,6 @@ class Tetrimino{
         }
         for(let i = 0; i <= 2;){
             for(let j = 0; j <= 2;){
-                console.log(i, j);
                 if(!this.detectCollision(i, j ,r)){
                     this.x += i;
                     this.y += j;
@@ -56,7 +55,6 @@ class Tetrimino{
         }
         for(let i = 0; i >= -2;){
             for(let j = 0; j >= -2;){
-                console.log(i, j);
                 if(!this.detectCollision(i, j ,r)){
                     this.x += i;
                     this.y += j;
@@ -77,7 +75,6 @@ class Tetrimino{
         }
         for(let i = 0; i <= 2;){
             for(let j = 0; j <= 2;){
-                console.log(i, j);
                 if(!this.detectCollision(i, j ,r)){
                     this.x += i;
                     this.y += j;
@@ -89,7 +86,6 @@ class Tetrimino{
         }
         for(let i = 0; i >= -2;){
             for(let j = 0; j >= -2;){
-                console.log(i, j);
                 if(!this.detectCollision(i, j ,r)){
                     this.x += i;
                     this.y += j;
