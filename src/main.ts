@@ -1,18 +1,27 @@
 import Game from "./include/Game";
+import { I_UIDOM, I_StatsBoard } from "./include/UIDOM"
 import config from "./config";
 
 const mainCanvas = document.querySelector('canvas.main')! as HTMLCanvasElement;
-const holdCanvas = document.querySelector('canvas.hold')! as HTMLCanvasElement;
 const nextCanvas = document.querySelector('canvas.next')! as HTMLCanvasElement;
-const statsBoard = document.querySelector('div.stats')! as HTMLDivElement;
-const UI = {
-    mainCanvas,
-    holdCanvas,
-    nextCanvas,
-    statsBoard
+const holdCanvas = document.querySelector('canvas.hold')! as HTMLCanvasElement;
+const timer = document.querySelector('span.timer-display')! as HTMLSpanElement;
+const linesCleared = document.querySelector('span.lines-cleared-display')! as HTMLSpanElement;
+
+const statsBoardSelections: I_StatsBoard = {
+    timer,
+    linesCleared
 }
+
+const UIDOMSelections: I_UIDOM = {
+    mainCanvas,
+    nextCanvas,
+    holdCanvas,
+    statsBoard: statsBoardSelections
+}
+
 const startBtn = document.querySelector('button.start')! as HTMLDivElement;
-let game: Game = new Game(UI, config.COLUMNS, config.ROWS, config.SIZE);
+let game: Game = new Game(UIDOMSelections, config.COLUMNS, config.ROWS, config.SIZE);
 startBtn.addEventListener(`click`, () => {
     if(!game.running){
         game.startGame();
@@ -30,7 +39,7 @@ enum GameControls {
     C = 67
 }
 document.addEventListener('keydown', e => {
-    if(!game){
+    if(!game.running){
         return;
     }
     const { LEFT, UP, RIGHT, DOWN, SPACE, Z, A, C } = GameControls;
@@ -65,6 +74,10 @@ document.addEventListener('keydown', e => {
             game.holdTetrimino();
             break;
     }
+    if(game.activeTetrimino?.lockdownTimer == undefined){
+        game.activeGhostTetrimino.erase().setProjection(game.activeTetrimino).render();
+    }
+
 });
 document.addEventListener('keyup', e => {
     if(!game){

@@ -14,7 +14,7 @@ class Tetrimino{
     softDropMode: boolean = false;
     lockdownTimer: undefined | number;
     lockdownMoves: number = 0;
-
+    
 
     static readonly MAX_LOCKDOWN_MOVES: number = 20;
     static readonly SOFT_DROP_SPEED: number = 0.01;
@@ -42,26 +42,48 @@ class Tetrimino{
                 r[i][j] = this.matrix[this.N - 1 - j][i];
             }
         }
-        for(let i = 0; i <= 2;){
-            for(let j = 0; j <= 2;){
+        for(let j = 0; j <= 2;){
+            for(let i = 0; i <= 2;){
                 if(!this.detectCollision(i, j ,r)){
                     this.x += i;
                     this.y += j;
                     this.matrix = Array.from(r, t => [...t]);
                     return this;
                 }
-                i == j ? (j++) : (i++)
+                i == j ? j++ : i++
             }
         }
-        for(let i = 0; i >= -2;){
-            for(let j = 0; j >= -2;){
-                if(!this.detectCollision(i, j ,r)){
-                    this.x += i;
+        for(let j = 0; j <= 2;){
+            for(let i = 0; i <= 2;){
+                if(!this.detectCollision(-i, j ,r)){
+                    this.x -= i;
                     this.y += j;
                     this.matrix = Array.from(r, t => [...t]);
                     return this;
                 }
-                i == j ? (i--) : (j--)
+                i == j ? j++ : i++
+            }
+        }
+        for(let j = 0; j <= 2;){
+            for(let i = 0; i <= 2;){
+                if(!this.detectCollision(-i, -j ,r)){
+                    this.x -= i;
+                    this.y -= j;
+                    this.matrix = Array.from(r, t => [...t]);
+                    return this;
+                }
+                i == j ? j++ : i++
+            }
+        }
+        for(let j = 0; j <= 2;){
+            for(let i = 0; i <= 2;){
+                if(!this.detectCollision(i, -j ,r)){
+                    this.x += i;
+                    this.y -= j;
+                    this.matrix = Array.from(r, t => [...t]);
+                    return this;
+                }
+                i == j ? j++ : i++
             }
         }
         return this;
@@ -73,26 +95,48 @@ class Tetrimino{
                 r[i][j] = this.matrix[j][this.N - 1 - i];
             }
         }
-        for(let i = 0; i <= 2;){
-            for(let j = 0; j <= 2;){
+        for(let j = 0; j <= 2;){
+            for(let i = 0; i <= 2;){
                 if(!this.detectCollision(i, j ,r)){
                     this.x += i;
                     this.y += j;
                     this.matrix = Array.from(r, t => [...t]);
                     return this;
                 }
-                i == j ? (j++) : (i++)
+                i == j ? j++ : i++
             }
         }
-        for(let i = 0; i >= -2;){
-            for(let j = 0; j >= -2;){
-                if(!this.detectCollision(i, j ,r)){
-                    this.x += i;
+        for(let j = 0; j <= 2;){
+            for(let i = 0; i <= 2;){
+                if(!this.detectCollision(-i, j ,r)){
+                    this.x -= i;
                     this.y += j;
                     this.matrix = Array.from(r, t => [...t]);
                     return this;
                 }
-                i == j ? (i--) : (j--)
+                i == j ? j++ : i++
+            }
+        }
+        for(let j = 0; j <= 2;){
+            for(let i = 0; i <= 2;){
+                if(!this.detectCollision(-i, -j ,r)){
+                    this.x -= i;
+                    this.y -= j;
+                    this.matrix = Array.from(r, t => [...t]);
+                    return this;
+                }
+                i == j ? j++ : i++
+            }
+        }
+        for(let j = 0; j <= 2;){
+            for(let i = 0; i <= 2;){
+                if(!this.detectCollision(i, -j ,r)){
+                    this.x += i;
+                    this.y -= j;
+                    this.matrix = Array.from(r, t => [...t]);
+                    return this;
+                }
+                i == j ? j++ : i++
             }
         }
         return this;
@@ -164,38 +208,40 @@ class Tetrimino{
         if(this.lockdownTimer){
             return;
         }
-        if(this.fall){
-            window.cancelAnimationFrame(this.fall);
-            this.fall = undefined;
-        }
-        let i = 0;
-        for(;; i++){
+        this.haltVerticalFalling();
+        this.y = this.projectY();
+        this.lockTetrimino();
+    };
+    projectY() : number{
+        let projectedY = this.y;
+        for(let i = 0;; i++){
             if(this.detectCollision(0, i)){
+                projectedY += i-1;
                 break;
             }
         }
-        this.y += i-1;
-        this.lockTetrimino();
+        return projectedY;
     };
     verticalFall() : void{
         this.clearLockdownTimer();
         this.haltVerticalFalling();
         let start: number, currTime, lastTime = 0;
         const drop: FrameRequestCallback = (now: number) => {
-            if(!start){ start = now; }
+            if(!start) start = now;
             currTime = (now - start)/1000;
             if(currTime > lastTime){
                 lastTime += this.softDropMode ? Tetrimino.SOFT_DROP_SPEED : Tetrimino.FREEFALL_SPEED;
                 if(!this.detectCollision(0, 1)){
                     this.erase().y++;
                     this.render();
-                }else{
-                    this.lockdownTimer = window.setTimeout(() => {
-                        this.lockTetrimino();
-                    }, 1000)
-                    this.lockdownMoves++;
-                    return;
                 }
+            }
+            if(this.detectCollision(0, 1)){
+                this.lockdownTimer = window.setTimeout(() => {
+                    this.lockTetrimino();
+                }, 1000)
+                this.lockdownMoves++;
+                return;
             }
             this.fall = window.requestAnimationFrame(drop);
         };
@@ -226,6 +272,7 @@ class Tetrimino{
     clearLockdownTimer() : void{
         if(this.clearLockdownTimer != undefined){
             window.clearTimeout(this.lockdownTimer);
+            this.lockdownTimer = undefined;
         }
     };
     haltVerticalFalling() : void{
@@ -278,6 +325,13 @@ class Tetrimino{
                 }
             }
         }
+        return this;
+    };
+    setProjection({x, y, matrix}: {x: number, y: number, matrix: Unit[][]}) : Tetrimino{
+        this.matrix = Array.from(matrix, t => [...t]);
+        this.x = x;
+        this.y = y;
+        this.y = this.projectY();
         return this;
     };
     ctx(ctxS: string = `main`) : CanvasRenderingContext2D{

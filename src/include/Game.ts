@@ -1,6 +1,6 @@
-import config from "../config";
 import drawBox from "./drawBox";
 import { Unit, data } from "../Tetriminoes"
+import { I_UIDOM } from "./UIDOM"
 import Tetrimino from "./Tetrimino";
 
 function genRandUnit() : Unit{
@@ -8,10 +8,7 @@ function genRandUnit() : Unit{
 };
 
 export default class Game {
-    mainCanvas: HTMLCanvasElement;
-    nextCanvas: HTMLCanvasElement;
-    holdCanvas: HTMLCanvasElement;
-    statsBoard: HTMLDivElement;
+    UIDOM: I_UIDOM;
     ctx!: CanvasRenderingContext2D;
     nextCtx!: CanvasRenderingContext2D;
     holdCtx!: CanvasRenderingContext2D;
@@ -21,42 +18,42 @@ export default class Game {
     readonly size: number;
 
     activeTetrimino!: Tetrimino;
+    activeGhostTetrimino!: Tetrimino;
     activeTetriminoUnit!: Unit;
     nextTetriminoUnits: Unit[] = [];
     tetriminoOnHoldUnit: undefined | Unit = undefined;
     gridMatrix: Unit[][] = [];
     timer!: NodeJS.Timer;
+    linesCleared: number;
     holdingDisabled: boolean = false;
     running: boolean = false;
 
     static readonly NEXT_TETRIMINOES_COUNT: number = 4;
     static readonly VACANT: string = `black`;
 
-    constructor(UI: {mainCanvas: HTMLCanvasElement, holdCanvas: HTMLCanvasElement, nextCanvas: HTMLCanvasElement, statsBoard: HTMLDivElement}, columns: number, rows: number, size: number){
-        this.mainCanvas = UI.mainCanvas;
-        this.holdCanvas = UI.holdCanvas;
-        this.nextCanvas = UI.nextCanvas;
-        this.statsBoard = UI.statsBoard;
+    constructor(UIDOM: I_UIDOM, columns: number, rows: number, size: number){
+        this.UIDOM = UIDOM;
         this.columns = columns;
         this.rows = rows;
         this.size = size;
-
+        this.linesCleared = 0;
+        
         this.mountAllCanvas();
     };
     mountMainCanvas() : void{
-        this.mainCanvas.width = this.columns*this.size;
-        this.mainCanvas.height = this.rows*this.size;
-        this.ctx = this.mainCanvas.getContext(`2d`)! as CanvasRenderingContext2D;
+        this.UIDOM.mainCanvas.width = this.columns*this.size;
+        this.UIDOM.mainCanvas.height = this.rows*this.size;
+        this.ctx = this.UIDOM.mainCanvas.getContext(`2d`)! as CanvasRenderingContext2D;
     };
     mountHoldCanvas() : void{
-        this.holdCanvas.width = 6*this.size;
-        this.holdCanvas.height = 6*this.size;
-        this.holdCtx = this.holdCanvas.getContext(`2d`)! as CanvasRenderingContext2D;
+        this.UIDOM.holdCanvas.width = 6*this.size;
+        this.UIDOM.holdCanvas.height = 6*this.size;
+        this.holdCtx = this.UIDOM.holdCanvas.getContext(`2d`)! as CanvasRenderingContext2D;
     };
     mountNextCanvas() : void{
-        this.nextCanvas.width = 6*this.size;
-        this.nextCanvas.height = 15*this.size;
-        this.nextCtx = this.nextCanvas.getContext(`2d`)! as CanvasRenderingContext2D;
+        this.UIDOM.nextCanvas.width = 6*this.size;
+        this.UIDOM.nextCanvas.height = 15*this.size;
+        this.nextCtx = this.UIDOM.nextCanvas.getContext(`2d`)! as CanvasRenderingContext2D;
     };
     mountAllCanvas() : void{
         this.mountMainCanvas();
@@ -131,25 +128,30 @@ export default class Game {
         }
 
     };
-    initTimer() : void{
+    initAndRenderTimer() : void{
         let mm: number = 0, ss: number = 0, ms: number = 0;
         this.timer = setInterval(() => {
             ms += 4;
             if(ms%100 == 0) ss++;
             if(ms%6000 == 0) mm++;
-            this.statsBoard.innerHTML = `Time Elapsed:<br />
+            this.UIDOM.statsBoard.timer.innerHTML = `Time Elapsed:<br />
             ${String(mm).padStart(2,'0')}:${String(ss%60).padStart(2, '0')}.${String(ms%100).padStart(2, '0')}`
         }, 40)
     };
+    renderLinesCleared() : void{
+        this.UIDOM.statsBoard.linesCleared.innerHTML = `LinesCleared:<br />${this.linesCleared}`
+    }
     setActiveTetrimino() : void{
         const t: Unit = this.nextTetriminoUnits.shift()!;
         this.activeTetriminoUnit = t;
         const { matrix, color } = data.tetriminoes[t-1];
         this.activeTetrimino = new Tetrimino(matrix, color, this);
+        this.activeGhostTetrimino = new Tetrimino(matrix, `grey`, this);
         this.fillNextTetriminoUnits();
     };
     holdTetrimino() : void{
         if(this.holdingDisabled == false){
+            this.activeGhostTetrimino.erase();
             if(this.tetriminoOnHoldUnit != undefined){
                 this.activeTetrimino.erase().haltVerticalFalling();
                 this.activeTetrimino.clearLockdownTimer();
@@ -158,6 +160,7 @@ export default class Game {
                 this.tetriminoOnHoldUnit = temp;
                 let { matrix, color } = data.tetriminoes[this.activeTetriminoUnit-1];
                 this.activeTetrimino = new Tetrimino(matrix, color, this);
+                this.activeGhostTetrimino = new Tetrimino(matrix, `grey`, this);
                 this.activeTetrimino.verticalFall();
             }else{
                 this.activeTetrimino.erase().haltVerticalFalling();
@@ -186,19 +189,24 @@ export default class Game {
                 atleastOneFullRow = true;
                 this.gridMatrix.splice(i, 1);
                 this.gridMatrix.unshift("0".repeat(this.columns).split("").map(n => +n));
+                this.linesCleared++;
             }
         }
+        this.renderLinesCleared();
         return atleastOneFullRow;
     };
     startGame() : void{
         this.running = true;
+        this.linesCleared = 0;
+        this.renderLinesCleared();
         this.initGridMatrix();
         this.render();
         this.fillNextTetriminoUnits();
         this.setActiveTetrimino();
+        this.activeGhostTetrimino.setProjection(this.activeTetrimino).render();
         this.renderNextCanvas();
         this.renderHoldCanvas();
-        this.initTimer();
+        this.initAndRenderTimer();
         this.activeTetrimino.verticalFall();
     };
     next() : void{
@@ -206,6 +214,7 @@ export default class Game {
         this.setActiveTetrimino();
         this.renderNextCanvas();
         this.activeTetrimino.verticalFall();
+        this.activeGhostTetrimino.setProjection(this.activeTetrimino).render();
     };
     render() : void{
         for(let i = 0; i < this.rows; i++){

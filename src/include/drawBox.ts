@@ -3,7 +3,7 @@ interface IHash {
 } 
 
 const box: IHash = {
-    "black" : require('../assets/black.png'),
+    "grey" : require('../assets/black.png'),
     "blue" : require('../assets/blue.png'),
     "cyan" : require('../assets/cyan.png'),
     "green" : require('../assets/green.png'),
